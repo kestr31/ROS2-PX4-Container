@@ -1,0 +1,10 @@
+bat
+curl
+git
+lsb-release
+neovim
+ros-dev-tools
+ros-humble-ros-base
+sudo
+wget
+zsh
