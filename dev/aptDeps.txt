@@ -4,7 +4,7 @@ git
 lsb-release
 neovim
 ros-dev-tools
-ros-humble-ros-base
+ros-${ROS_DISTRO}-ros-base
 sudo
 wget
 zsh

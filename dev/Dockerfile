@@ -21,10 +21,10 @@ ENV \
     LC_ALL=en_US.UTF-8
 
 RUN \
-    if [[ "x${BASETAG}" == "x22.04" ]]; then \
+    if [ "x$(cat /etc/os-release | grep 'VERSION_ID' | cut -d'=' -f2 | tr -d '"')" == "x22.04" ] || [ "x$(cat /etc/os-release | grep 'VERSION_ID' | cut -d'=' -f2 | tr -d '"')" == "x20.04" ]; then \
         echo "BASE IMAGE CHECK PASSED."; \
     else \
-        echo "IMAGE MUST BE BASED ON UBUNTU 22.04." \
+        echo "IMAGE MUST BE BASED ON UBUNTU 20.04 OR 22.04." \
         && exit 1; \
     fi
 
@@ -86,6 +86,7 @@ RUN \
     && apt-get install --no-install-recommends -y \
         ca-certificates \
         locales \
+        gettext \
     && rm -rf /tmp/*
 
 # SET LOCALE TO en_UT.UTF-8
@@ -102,8 +103,16 @@ RUN \
     --mount=type=cache,target=/var/lib/apt,from=stage_apt,source=/var/lib/apt \
     --mount=type=cache,target=/etc/apt/sources.list.d,from=stage_apt,source=/etc/apt/sources.list.d \
     --mount=type=cache,target=/etc/apt/sources.list,from=stage_apt,source=/etc/apt/sources.list \
-	apt-get install --no-install-recommends -y \
-        $(cat /tmp/aptDeps.txt) \
+    if [[ "x$(cat /etc/os-release | grep 'VERSION_ID' | cut -d'=' -f2 | tr -d '"')" == "x22.04" ]]; then \
+        ROS_DISTRO=humble envsubst < /tmp/aptDeps.txt > /tmp/aptDepsMod.txt; \
+    elif [[ "x$(cat /etc/os-release | grep 'VERSION_ID' | cut -d'=' -f2 | tr -d '"')" == "x20.04" ]]; then \
+        ROS_DISTRO=galactic envsubst < /tmp/aptDeps.txt > /tmp/aptDepsMod.txt; \
+    else \
+        echo "IMAGE MUST BE BASED ON UBUNTU 20.04 OR 22.04" \
+        && exit 1; \
+    fi \
+    && apt-get install --no-install-recommends -y \
+        $(cat /tmp/aptDepsMod.txt) \
     && rm -rf /tmp/*
 
 # ADD NON-ROOT USER user AND GRANT SUDO PERMISSION
@@ -134,7 +143,14 @@ RUN \
         /home/user/px4_ros_ws/src/px4_msgs -b release/1.14 \
     && git -C /home/user/px4_ros_ws/src/px4_msgs \
         reset --hard ffc3a4cd578776213a444abe17d7eabf9621b266 \
-    && source /opt/ros/humble/setup.bash \
+    && if [[ "x$(cat /etc/os-release | grep 'VERSION_ID' | cut -d'=' -f2 | tr -d '"')" == "x22.04" ]]; then \
+        source /opt/ros/humble/setup.bash; \
+    elif [[ "x$(cat /etc/os-release | grep 'VERSION_ID' | cut -d'=' -f2 | tr -d '"')" == "x20.04" ]]; then \
+        source /opt/ros/galactic/setup.bash; \
+    else \
+        echo "IMAGE MUST BE BASED ON UBUNTU 20.04 OR 22.04" \
+        && exit 1; \
+    fi \
     && colcon build \
         --base-paths ${HOME}/px4_ros_ws/src \
         --build-base ${HOME}/px4_ros_ws/build \
@@ -151,16 +167,43 @@ COPY --chown=user:user entrypoint.sh \
 RUN \
     mkdir /home/user/scripts \
     && sudo ln -s /usr/local/bin/entrypoint.sh /home/user/scripts/entrypoint.sh \
-    && echo "source /opt/ros/humble/setup.bash" >> ${HOME}/.bashrc \
-    && echo "source /opt/ros/humble/setup.zsh" >> ${HOME}/.zshrc \
+    && if [[ "x$(cat /etc/os-release | grep 'VERSION_ID' | cut -d'=' -f2 | tr -d '"')" == "x22.04" ]]; then \
+        echo "source /opt/ros/humble/setup.bash" >> ${HOME}/.bashrc \
+        && echo "source /opt/ros/humble/setup.zsh" >> ${HOME}/.zshrc; \
+    elif [[ "x$(cat /etc/os-release | grep 'VERSION_ID' | cut -d'=' -f2 | tr -d '"')" == "x20.04" ]]; then \
+        echo "source /opt/ros/galactic/setup.bash" >> ${HOME}/.bashrc \
+        && echo "source /opt/ros/galactic/setup.zsh" >> ${HOME}/.zshrc; \
+    else \
+        echo "IMAGE MUST BE BASED ON UBUNTU 20.04 OR 22.04" \
+        && exit 1; \
+    fi \
     && echo "source ${HOME}/px4_ros_ws/install/setup.bash" >> ${HOME}/.bashrc \
     && echo "source ${HOME}/px4_ros_ws/install/setup.zsh" >> ${HOME}/.zshrc
 
 CMD [ "/usr/local/bin/entrypoint.sh" ]
 
-# ------- BUILD COMMAND ------
-# DOCKER_BUILDKIT=1 docker build \
+# --------------- BUILD COMMAND ---------------
+# docker buildx build \
+# --progress=plain \
+# --platform=linux/arm64/v8,linux/amd64 \
 # --build-arg BASEIMAGE=ubuntu \
 # --build-arg BASETAG=22.04 \
 # -t kestr3l/ros2:dev-humble \
+# -f ./Dockerfile .
+
+# ------- BUILD COMMAND (AMD64 CUDA) ------
+# docker buildx build \
+# --progress=plain \
+# --build-arg BASEIMAGE=nvidia/cuda \
+# --build-arg BASETAG=11.8.0-devel-ubuntu22.04 \
+# -t kestr3l/ros2:dev-humble-cu1181d \
+# -f ./Dockerfile .
+
+# ------- BUILD COMMAND (ARM64 L4T) -------
+# docker buildx build \
+# --progress=plain \
+# --platform=linux/arm64/v8 \
+# --build-arg BASEIMAGE=nvcr.io/nvidia/l4t-ml \
+# --build-arg BASETAG=r35.2.1-py3 \
+# -t kestr3l/ros2:dev-humble-l4t-ml \
 # -f ./Dockerfile .

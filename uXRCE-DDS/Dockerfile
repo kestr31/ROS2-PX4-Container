@@ -162,8 +162,10 @@ RUN \
 
 CMD [ "/usr/local/bin/entrypoint.sh" ]
 
-# ------- BUILD COMMAND ------
-# DOCKER_BUILDKIT=1 docker build \
+# ---------- BUILD COMMAND ----------
+# docker buildx build \
+# --progress=plain \
+# --platform=linux/arm64/v8,linux/amd64 \
 # --build-arg BASEIMAGE=ubuntu \
 # --build-arg BASETAG=22.04 \
 # -t kestr3l/ros2:uxrce-humble \
