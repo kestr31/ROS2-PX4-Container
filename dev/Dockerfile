@@ -207,7 +207,7 @@ CMD [ "/usr/local/bin/entrypoint.sh" ]
 # --platform=linux/arm64/v8,linux/amd64 \
 # --build-arg BASEIMAGE=ubuntu \
 # --build-arg BASETAG=22.04 \
-# -t kestr3l/ros2:dev-humble-0.1 \
+# -t kestr3l/ros2:dev-humble \
 # -f ./Dockerfile .
 
 # ------- BUILD COMMAND (AMD64 CUDA) ------
