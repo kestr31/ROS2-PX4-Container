@@ -115,6 +115,18 @@ RUN \
         $(cat /tmp/aptDepsMod.txt) \
     && rm -rf /tmp/*
 
+
+COPY --chown=ue4:ue4 \
+    pyDeps.txt /tmp/pyDeps.txt
+
+# INSTALL PYTHON DEPENDENCIES
+# AIRSIM PACKAGE MUST BE INSTALLED LATER THAN MSGPACK-RPC-PYTHON
+RUN \
+    python3 -m pip install  \
+        $(cat /tmp/pyDeps.txt) \
+    && rm -rf /tmp/*
+
+
 # ADD NON-ROOT USER user AND GRANT SUDO PERMISSION
 # THIS IS BAD FOR CONTAINER SECURITY
 # BUT THIS DOES NOT MATTERS FOR DEVELOPING SIMULATOR CONTAINER
@@ -183,12 +195,19 @@ RUN \
 CMD [ "/usr/local/bin/entrypoint.sh" ]
 
 # --------------- BUILD COMMAND ---------------
+# DOCKER_BUILDKIT=1 docker build \
+# --build-arg BASEIMAGE=nvidia/cuda \
+# --build-arg BASETAG=11.8.0-devel-ubuntu22.04  \
+# -t jociiiii/ros2:dev-humble-0.1 \
+# -f ./Dockerfile .
+
+
 # docker buildx build \
 # --progress=plain \
 # --platform=linux/arm64/v8,linux/amd64 \
 # --build-arg BASEIMAGE=ubuntu \
 # --build-arg BASETAG=22.04 \
-# -t kestr3l/ros2:dev-humble \
+# -t kestr3l/ros2:dev-humble-0.1 \
 # -f ./Dockerfile .
 
 # ------- BUILD COMMAND (AMD64 CUDA) ------
