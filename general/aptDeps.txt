@@ -1,0 +1,8 @@
+ros-galactic-geographic-msgs
+ros-galactic-geometry-msgs
+ros-galactic-image-transport
+ros-galactic-mavros*
+ros-galactic-ros-base
+ros-galactic-tf2-geometry-msgs
+ros-galactic-tf2-sensor-msgs
+ros-galactic-vision-opencv
